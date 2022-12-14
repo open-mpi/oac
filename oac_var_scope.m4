@@ -43,11 +43,13 @@ AC_DEFUN([OAC_VAR_SCOPE_INIT],
     for oac_var_scope_tmp_var in $[]@; do
         AS_VAR_SET_IF([$oac_var_scope_tmp_var],
             [AS_VAR_COPY([oac_var_scope_tmp_var_val], [$oac_var_scope_tmp_var])
+             m4_pattern_allow([OAC_])
              AC_MSG_ERROR([Found configure shell variable clash at line $oac_var_scope_push_lineno!
 [OAC_VAR_SCOPE_PUSH] called on "$oac_var_scope_tmp_var",
 but it is already defined with value "$oac_var_scope_tmp_var_val"
 This usually indicates an error in configure.
-Cannot continue.])])
+Cannot continue.])
+             m4_pattern_forbid([OAC_])])
     done
     AS_UNSET([oac_var_scope_push_lineno])
     AS_UNSET([oac_var_scope_tmp_var])
@@ -77,7 +79,7 @@ AC_REQUIRE([OAC_VAR_SCOPE_INIT])dnl
 m4_pushdef([oac_var_scope_stack], [$1])dnl
 m4_foreach_w([oac_var_scope_var], [$1],
              [m4_set_add([oac_var_scope_active_set], oac_var_scope_var,
-                         [], [m4_fatal([OAC_VAR_SCOPE_PUSH found the variable ]oac_var_scope_var[
+                         [], [m4_fatal([$0 found the variable ]oac_var_scope_var[
 active in a previous scope.])])])dnl
 oac_var_scope_push ${LINENO} $1
 ])dnl
@@ -90,9 +92,11 @@ dnl OAC_VAR_SCOPE_PUSH should have a matched call to this macro.
 AC_DEFUN([OAC_VAR_SCOPE_POP],[
 AC_REQUIRE([OAC_VAR_SCOPE_INIT])dnl
 m4_ifdef([oac_var_scope_stack], [],
-         [m4_fatal([OAC_VAR_SCOPE_POP was called without a defined
-variable stack.  This usually means that OAC_VAR_SCOPE_POP was called more
-times than OAC_VAR_SCOPE_PUSH.])])dnl
+         [m4_pattern_allow([OAC_])
+          m4_fatal([$0 was called without a defined
+variable stack.  This usually means that $0 was called more
+times than OAC_VAR_SCOPE_PUSH.])
+          m4_pattern_forbid([OAC_])])dnl
 m4_foreach_w([oac_var_scope_var], oac_var_scope_stack,
              [m4_set_remove([oac_var_scope_active_set], oac_var_scope_var)])dnl
 oac_var_scope_pop oac_var_scope_stack
