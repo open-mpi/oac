@@ -7,6 +7,9 @@ dnl Additional copyrights may follow
 dnl
 dnl $HEADER$
 
+dnl OAC is meant to be a "behind the scenes" kind of thing -- we don't
+dnl any any AC_DEFINEd or AC_SUBSTed symbols that begin with "OAC_".
+m4_pattern_forbid([OAC_])
 
 dnl OAC_PUSH_PREFIX: Set a new prefix for AC_DEFINE/AC_SUBST names
 dnl
