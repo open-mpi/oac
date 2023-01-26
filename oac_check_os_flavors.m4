@@ -57,6 +57,7 @@ AC_DEFUN([OAC_CHECK_OS_FLAVORS],
     AC_DEFINE_UNQUOTED([OAC_HAVE_SOLARIS],
                        [$oac_have_solaris],
                        [Whether or not we have solaris])
+    AM_CONDITIONAL(OAC_HAVE_SOLARIS, test "$oac_have_solaris" = "1")
 
     AS_IF([test "$oac_found_apple" = "yes"],
           [oac_have_apple=1],
@@ -64,5 +65,6 @@ AC_DEFUN([OAC_CHECK_OS_FLAVORS],
     AC_DEFINE_UNQUOTED([OAC_HAVE_APPLE],
                        [$oac_have_apple],
                        [Whether or not we have apple])
+    AM_CONDITIONAL(OAC_HAVE_APPLE, test "$oac_have_apple" = "1")
 
 ])dnl
