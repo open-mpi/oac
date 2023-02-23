@@ -625,7 +625,7 @@ disambiguate.])],
                          AC_MSG_RESULT([found -- lib])],
                         [test $check_package_generic_prefix_lib64 -eq 1],
                         [check_package_generic_prefix_happy=1
-                         libdir_prefix=${check_package_prefix}/lib64
+                         $2_LDFLAGS=-L${check_package_prefix}/lib64
                          AC_MSG_RESULT([found -- lib64])],
                         [AC_MSG_RESULT([not found])])])])
 
