@@ -12,7 +12,7 @@ dnl Copyright (c) 2004-2005 The Regents of the University of California.
 dnl                         All rights reserved.
 dnl Copyright (c) 2007      Sun Microsystems, Inc.  All rights reserved.
 dnl Copyright (c) 2009      Oak Ridge National Labs.  All rights reserved.
-dnl Copyright (c) 2009-2020 Cisco Systems, Inc.  All rights reserved.
+dnl Copyright (c) 2009-2023 Cisco Systems, Inc.  All rights reserved.
 dnl Copyright (c) 2014      Intel, Inc. All rights reserved.
 dnl Copyright (c) 2015-2017 Research Organization for Information Science
 dnl                         and Technology (RIST). All rights reserved.
@@ -214,7 +214,7 @@ OAC_VAR_SCOPE_PUSH([oac_list_arg oac_list_append oac_list_val oac_list_tmp_varia
 for oac_list_arg in $2; do
     AS_CASE([${oac_list_arg}],
             [-I*|-L*],
-            [oac_list_apend=1
+            [oac_list_append=1
              for oac_list_val in ${$1} ; do
                  AS_IF([test "x${oac_list_val}" = "x${oac_list_arg}"],
                        [oac_list_append=0])
