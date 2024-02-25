@@ -1,6 +1,7 @@
 dnl -*- autoconf -*-
 dnl
 dnl Copyright (c) 2020-2022 Cisco Systems, Inc.  All rights reserved.
+dnl Copyright (c) 2024 Jeffrey M. Squyres.  All rights reserved.
 dnl
 dnl $COPYRIGHT$
 dnl
@@ -19,6 +20,10 @@ dnl 2 -> (OPTIONAL) URL to display in AC_MSG_WARN when docs will not be installe
 dnl      If $2 is empty, nothing will be displayed.
 dnl      Note: if $2 contains a #, be sure to double quote it
 dnl      (e.g., [[https://example.com/foo.html#some-anchor]])
+dnl
+dnl 3 -> (OPTIONAL) Filename of requirements.txt-like file containing
+dnl      the required Pip modules (to be displayed if rendering a
+dnl      simple RST project fails).
 dnl
 dnl This macro requires that OAC_PUSH_PREFIX was previously called.
 dnl The pushed prefix may be used if this macro chooses to set {OAC
@@ -90,9 +95,54 @@ AC_DEFUN([OAC_SETUP_SPHINX],[
                   AC_MSG_RESULT([yes])])
           ])
 
+    # If we found Sphinx, check to ensure that we have all the things
+    # required to build Open MPI/PRRTE/OpenPMIx-like documentation
+    # (e.g., any required pip modules).  If we can't render a sample
+    # OMPI-like doc, we're not going to automatically install any
+    # missing pip modules; we'll just mark Sphinx as being
+    # unavailable.
+    AS_IF([test -n "$SPHINX_BUILD"],
+          [AC_MSG_CHECKING([for required Sphinx modules])
+           oac_startdir=`pwd`
+           oac_tmpdir=conftmp.$$
+           rm -rf $oac_tmpdir
+           mkdir $oac_tmpdir
+           cd $oac_tmpdir
+           cat > conf.py <<EOF
+# Minimum config that we need for Open MPI/PRRTE/OpenPMIx-like docs
+project = 'Testing'
+copyright = 'Testing'
+author = 'Testing'
+import sphinx_rtd_theme
+# Note the extra quoting needed for square brackets because this is m4
+extensions = [[ 'recommonmark', 'sphinx_rtd_theme', 'sphinx.ext.extlinks' ]]
+html_theme = 'sphinx_rtd_theme'
+EOF
+           echo "Hello world" > index.rst
+
+           # Try to render this trivial RST project as both HTML and
+           # man pages and see if it works.
+           oac_happy=0
+           OAC_LOG_COMMAND([$SPHINX_BUILD -M html . build-html],
+               [OAC_LOG_COMMAND([$SPHINX_BUILD -M man . build-man],
+                   [oac_happy=1])])
+           AS_IF([test $oac_happy -eq 1],
+                 [AC_MSG_RESULT([found])],
+                 [SPHINX_BUILD=
+                  AC_MSG_RESULT([not found])])
+
+           cd $oac_startdir
+           rm -rf $oac_tmpdir
+          ])
+
     AS_IF([test -z "$SPHINX_BUILD"],
           _oac_program_prefix[_MAKEDIST_DISABLE="$]_oac_program_prefix[_MAKEDIST_DISABLE Sphinx/Documentation"
            AC_MSG_NOTICE([Could not find a suitable sphinx-build on your system.])
+           AS_IF([test -n "$3"],
+                 [AC_MSG_NOTICE([If you want to build the documentation, ensure that the])
+                  AC_MSG_NOTICE([Python modules in $3])
+                  AC_MSG_NOTICE([are available.])
+                 ])
            AC_MSG_NOTICE([You will not be able to build a distribution tarball.])
           ])
 
@@ -107,7 +157,7 @@ AC_DEFUN([OAC_SETUP_SPHINX],[
     # abort.  This is likely only useful to prevent "oops!" moments
     # from developers.
     AS_IF([test -z "$SPHINX_BUILD" && test "$enable_sphinx" = "yes"],
-          [AC_MSG_WARN([Sphinx was not found, but --enable-sphinx was specified])
+          [AC_MSG_WARN([A suitable Sphinx was not found, but --enable-sphinx was specified])
            AC_MSG_ERROR([Cannot continue])])
 
     # Construct a summary message.  Due SUMMARY_ADD's implementation,
