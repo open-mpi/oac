@@ -595,7 +595,7 @@ AC_DEFUN([_OAC_CHECK_PACKAGE_GENERIC_PREFIX], [
           [check_package_generic_prefix_happy=0
            AS_IF([test -n "${check_package_libdir}"],
                  [AC_MSG_CHECKING([for $1 library (${check_package_generic_search_lib}) in ${check_package_libdir}])
-                  ls ${check_package_libdir}/lib${check_package_generic_search_lib}.*  1>&/dev/null 2>&1
+                  ls ${check_package_libdir}/lib${check_package_generic_search_lib}.*  >/dev/null 2>&1
                   AS_IF([test $? -eq 0],
                         [check_package_generic_prefix_happy=1
                          $2_LDFLAGS="-L${check_package_libdir}"
@@ -604,9 +604,9 @@ AC_DEFUN([_OAC_CHECK_PACKAGE_GENERIC_PREFIX], [
                  [check_package_generic_prefix_lib=0
                   check_package_generic_prefix_lib64=0
 
-                  ls ${check_package_prefix}/lib/lib${check_package_generic_search_lib}.*  1>&/dev/null 2>&1
+                  ls ${check_package_prefix}/lib/lib${check_package_generic_search_lib}.*  >/dev/null 2>&1
                   AS_IF([test $? -eq 0], [check_package_generic_prefix_lib=1])
-                  ls ${check_package_prefix}/lib64/lib${check_package_generic_search_lib}.*  1>&/dev/null 2>&1
+                  ls ${check_package_prefix}/lib64/lib${check_package_generic_search_lib}.*  >/dev/null 2>&1
                   AS_IF([test $? -eq 0], [check_package_generic_prefix_lib64=1])
 
                   AC_MSG_CHECKING([for $1 library (${check_package_generic_search_lib}) in ${check_package_prefix}])
