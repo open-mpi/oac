@@ -15,7 +15,7 @@ dnl OAC_PUSH_PREFIX: Set a new prefix for AC_DEFINE/AC_SUBST names
 dnl
 dnl 1 -> new prefix
 dnl
-dnl Override (prehaps temporarily) the prefix name specified to
+dnl Override (perhaps temporarily) the prefix name specified to
 dnl OAC_INIT.
 AC_DEFUN([OAC_PUSH_PREFIX],
 [m4_pushdef([_oac_program_prefix], [$1])])
