@@ -24,7 +24,7 @@ dnl
 dnl $HEADER$
 
 
-dnl OAC_UNIQ: Uniqify the string-seperated words in the input variable
+dnl OAC_UNIQ: Uniqify the string-separated words in the input variable
 dnl
 dnl 1 -> variable name to be uniq-ized
 AC_DEFUN([OAC_UNIQ],[

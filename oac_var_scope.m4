@@ -68,7 +68,7 @@ oac_var_scope_pop()
 
 dnl OAC_VAR_SCOPE_PUSH: Create a new variable scope
 dnl
-dnl 1 -> space seperated list of variable names to push into the new scope
+dnl 1 -> space separated list of variable names to push into the new scope
 dnl
 dnl Scope-check that the vars in the space-separated vars list are not already
 dnl in use.  Generate a configure-time error if a conflict is found.  Note that
