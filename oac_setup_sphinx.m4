@@ -2,6 +2,7 @@ dnl -*- autoconf -*-
 dnl
 dnl Copyright (c) 2020-2022 Cisco Systems, Inc.  All rights reserved.
 dnl Copyright (c) 2024 Jeffrey M. Squyres.  All rights reserved.
+dnl Copyright (c) 2025      NVIDIA Corporation.  All rights reserved.
 dnl
 dnl $COPYRIGHT$
 dnl
@@ -41,14 +42,9 @@ AC_DEFUN([OAC_SETUP_SPHINX],[
         [AS_HELP_STRING([--enable-sphinx],
             [Force configure to fail if Sphinx is not found (Sphinx is used to build the HTML docs and man pages).  This option is likely only useful for developers; end users who are building from distribution tarballs do ***not*** need to have Sphinx installed])])
 
-    # Quick check to see if we have already-built docs (e.g., if we're
-    # in a tarball vs. a fresh git clone).
-    AC_MSG_CHECKING([if pre-built docs are available])
-    AS_IF([test -f "$1"],
-          [oac_install_docs=1
-           AC_MSG_RESULT([yes])],
-          [oac_install_docs=0
-           AC_MSG_RESULT([no])])
+    # By default assume we don't have to install. We'll update as we find
+    # either a sane building environment or pre-built documentation (from a tarball).
+    oac_install_docs=0
 
     # To generate HTML docs + man pages, we need Sphinx.  If we have
     # Sphinx, then we're able to both build and install the docs
@@ -138,6 +134,7 @@ EOF
     AS_IF([test -z "$SPHINX_BUILD"],
           _oac_program_prefix[_MAKEDIST_DISABLE="$]_oac_program_prefix[_MAKEDIST_DISABLE Sphinx/Documentation"
            AC_MSG_NOTICE([Could not find a suitable sphinx-build on your system.])
+           oac_install_docs=0
            AS_IF([test -n "$3"],
                  [AC_MSG_NOTICE([If you want to build the documentation, ensure that the])
                   AC_MSG_NOTICE([Python modules in $3])
@@ -145,6 +142,14 @@ EOF
                  ])
            AC_MSG_NOTICE([You will not be able to build a distribution tarball.])
           ])
+
+    # Check if we have already-built docs (e.g., if we're
+    # in a tarball vs. a fresh git clone).
+    AC_MSG_CHECKING([if pre-built docs are available])
+    AS_IF([test -f "$1"],
+          [oac_install_docs=1
+           AC_MSG_RESULT([yes])],
+          [AC_MSG_RESULT([no])])
 
     AS_IF([test $oac_install_docs -eq 0],
           [AC_MSG_WARN([*** You will not have documentation installed.])
