@@ -85,10 +85,7 @@ AC_DEFUN([OAC_SETUP_SPHINX],[
            AS_IF([test "$oac_sphinx_result" = "lesser"],
                  [SPHINX_BUILD=
                   AC_MSG_RESULT([no])],
-                 [ # If we're building, we're also installing, regardless of
-                   # whether we found pre-build docs or not (above).
-                  oac_install_docs=1
-                  AC_MSG_RESULT([yes])])
+                 [AC_MSG_RESULT([yes])])
           ])
 
     # If we found Sphinx, check to ensure that we have all the things
@@ -141,6 +138,9 @@ EOF
                   AC_MSG_NOTICE([are available.])
                  ])
            AC_MSG_NOTICE([You will not be able to build a distribution tarball.])
+          ],
+          [ # If we're building, we're installing !
+            oac_install_docs=1
           ])
 
     # Check if we have already-built docs (e.g., if we're
