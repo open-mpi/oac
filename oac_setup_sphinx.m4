@@ -108,7 +108,7 @@ copyright = 'Testing'
 author = 'Testing'
 import sphinx_rtd_theme
 # Note the extra quoting needed for square brackets because this is m4
-extensions = [[ 'recommonmark', 'sphinx_rtd_theme', 'sphinx.ext.extlinks' ]]
+extensions = [[ 'sphinx_rtd_theme', 'sphinx.ext.extlinks' ]]
 html_theme = 'sphinx_rtd_theme'
 EOF
            echo "Hello world" > index.rst
