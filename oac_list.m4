@@ -17,6 +17,7 @@ dnl Copyright (c) 2014      Intel, Inc. All rights reserved.
 dnl Copyright (c) 2015-2017 Research Organization for Information Science
 dnl                         and Technology (RIST). All rights reserved.
 dnl Copyright (c) 2021-2022 Amazon.com, Inc. or its affiliates.  All Rights reserved.
+dnl Copyright (c) 2026      NVIDIA Corporation.  All rights reserved.
 dnl $COPYRIGHT$
 dnl
 dnl Additional copyrights may follow
@@ -28,63 +29,51 @@ dnl OAC_UNIQ: Uniqify the string-separated words in the input variable
 dnl
 dnl 1 -> variable name to be uniq-ized
 AC_DEFUN([OAC_UNIQ],[
-OAC_VAR_SCOPE_PUSH([oac_uniq_name oac_uniq_done oac_uniq_i oac_uniq_found oac_uniq_count oac_uniq_newval oac_uniq_val])
+OAC_VAR_SCOPE_PUSH([oac_uniq_name oac_uniq_i oac_uniq_found oac_uniq_count oac_uniq_newval oac_uniq_val oac_uniq_eval oac_uniq_tmp])
 
 oac_uniq_name=$1
 
 # Go through each item in the variable and only keep the unique ones
 oac_uniq_count=0
 for oac_uniq_val in ${$1}; do
-    oac_uniq_done=0
     oac_uniq_i=1
     oac_uniq_found=0
 
-    # Loop over every token we've seen so far
-    oac_uniq_done="`expr ${oac_uniq_i} \> ${oac_uniq_count}`"
-    while test ${oac_uniq_found} -eq 0 && test ${oac_uniq_done} -eq 0; do
-        # Have we seen this token already?  Prefix the comparison with
-        # "x" so that "-Lfoo" values won't be cause an error.
-        oac_uniq_eval="expr x${oac_uniq_val} = x\${oac_uniq_array_$oac_uniq_i}"
-        oac_uniq_found=`eval ${oac_uniq_eval}`
-
-        # Check the ending condition
-        oac_uniq_done="`expr ${oac_uniq_i} \>= ${oac_uniq_count}`"
-
-        # Increment the counter
-        oac_uniq_i="`expr ${oac_uniq_i} + 1`"
+    # Loop over every token we've seen so far; use -le so we avoid
+    # the > redirection ambiguity when the comparison falls to expr.
+    while test ${oac_uniq_found} -eq 0 && test ${oac_uniq_i} -le ${oac_uniq_count}; do
+        # Have we seen this token already?  Use a temp var so we avoid
+        # eval "[ ... ]": M4 treats [ and ] as quoting characters and
+        # would silently strip the shell-test brackets on expansion.
+        eval "oac_uniq_tmp=\${oac_uniq_array_$oac_uniq_i}"
+        AS_IF([test "x${oac_uniq_val}" = "x${oac_uniq_tmp}"], [oac_uniq_found=1])
+        AS_VAR_ARITH([oac_uniq_i], [$oac_uniq_i + 1])
     done
 
-    # If we didn't find the token, add it to the "array"
+    # If we didn't find the token, add it to the "array".
+    # oac_uniq_i is now oac_uniq_count+1 when found==0.
     if test ${oac_uniq_found} -eq 0; then
-        oac_uniq_eval="oac_uniq_array_${oac_uniq}_i=${oac_uniq_val}"
-        eval ${oac_uniq_eval}
-        oac_uniq_count="`expr ${oac_uniq_count} + 1`"
-    else
-        oac_uniq_i="`expr ${oac_uniq_i} - 1`"
+        eval "oac_uniq_array_${oac_uniq_i}=\${oac_uniq_val}"
+        AS_VAR_ARITH([oac_uniq_count], [$oac_uniq_count + 1])
     fi
 done
 
 # Take all the items in the "array" and assemble them back into a
 # single variable
 oac_uniq_i=1
-oac_uniq_done="`expr ${oac_uniq_i} \> ${oac_uniq_count}`"
 oac_uniq_newval=
-while test ${oac_uniq_done} -eq 0; do
-    oac_uniq_eval="oac_uniq_newval=\"${oac_uniq_newval} \${oac_uniq_array_$oac_uniq_i}\""
-    eval ${oac_uniq_eval}
+while test ${oac_uniq_i} -le ${oac_uniq_count}; do
+    eval "oac_uniq_tmp=\${oac_uniq_array_$oac_uniq_i}"
+    OAC_APPEND([oac_uniq_newval], [${oac_uniq_tmp}])
 
     oac_uniq_eval="unset oac_uniq_array_${oac_uniq_i}"
     eval ${oac_uniq_eval}
 
-    oac_uniq_done="`expr ${oac_uniq_i} \>= ${oac_uniq_count}`"
-    oac_uniq_i="`expr ${oac_uniq_i} + 1`"
+    AS_VAR_ARITH([oac_uniq_i], [$oac_uniq_i + 1])
 done
 
 # Done; do the assignment
-
-oac_uniq_newval="`echo ${oac_uniq_newval}`"
-oac_uniq_eval="${oac_uniq_name}=\"${oac_uniq_newval}\""
-eval ${oac_uniq_eval}
+eval "${oac_uniq_name}=\${oac_uniq_newval}"
 
 OAC_VAR_SCOPE_POP
 ])dnl
@@ -145,14 +134,15 @@ dnl
 dnl This macro assumes a space separated list.
 AC_DEFUN([OAC_FLAGS_APPEND_UNIQ],
 [OAC_ASSERT_LITERAL([$1])
-OAC_VAR_SCOPE_PUSH([oac_list_prefix oac_list_append oac_list_arg oac_list_val])
+OAC_VAR_SCOPE_PUSH([oac_list_append oac_list_arg oac_list_val])
 for oac_list_arg in $2; do
     oac_list_append=1
     AS_CASE([${oac_list_arg}],
             [-I*|-L*|-l*],
             [for oac_list_val in ${$1}; do
-                 AS_IF([test "x${oal_list_val}" = "x${oac_list_arg}"],
-                       [oac_list_append=0])
+                 AS_IF([test "x${oac_list_val}" = "x${oac_list_arg}"],
+                       [oac_list_append=0
+                        break])
              done])
     AS_IF([test ${oac_list_append} -eq 1],
           [OAC_APPEND([$1], [$oac_list_arg])])
@@ -174,18 +164,22 @@ dnl
 dnl This macro assumes a space separated list.
 AC_DEFUN([OAC_FLAGS_PREPEND_UNIQ],
 [OAC_ASSERT_LITERAL([$1])
-OAC_VAR_SCOPE_PUSH([oac_list_prefix oac_list_prepend oac_list_arg oac_list_val])
+OAC_VAR_SCOPE_PUSH([oac_list_prepend oac_list_arg oac_list_val oac_list_new])
+oac_list_new=
 for oac_list_arg in $2; do
     oac_list_prepend=1
     AS_CASE([${oac_list_arg}],
             [-I*|-L*|-l*],
             [for oac_list_val in ${$1}; do
-                 AS_IF([test "x${oal_list_val}" = "x${oac_list_arg}"],
-                       [oac_list_prepend=0])
+                 AS_IF([test "x${oac_list_val}" = "x${oac_list_arg}"],
+                       [oac_list_prepend=0
+                        break])
              done])
     AS_IF([test ${oac_list_prepend} -eq 1],
-           [AS_IF([test -z "${$1}"], [$1="$2"], [$1="$2 ${$1}"])])
+          [OAC_APPEND([oac_list_new], [${oac_list_arg}])])
 done
+AS_IF([test -n "${oac_list_new}"],
+      [AS_IF([test -z "${$1}"], [$1="${oac_list_new}"], [$1="${oac_list_new} ${$1}"])])
 OAC_VAR_SCOPE_POP
 ])dnl
 
@@ -217,7 +211,8 @@ for oac_list_arg in $2; do
             [oac_list_append=1
              for oac_list_val in ${$1} ; do
                  AS_IF([test "x${oac_list_val}" = "x${oac_list_arg}"],
-                       [oac_list_append=0])
+                       [oac_list_append=0
+                        break])
              done
              AS_IF([test ${oac_list_append} -eq 1],
                    [OAC_APPEND([$1], [${oac_list_arg}])])],

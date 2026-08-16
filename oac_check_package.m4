@@ -2,6 +2,7 @@ dnl -*- autoconf -*-
 dnl
 dnl Copyright (c) 2022      Amazon.com, Inc. or its affiliates.  All Rights reserved.
 dnl Copyright (c) 2022      Nanook Consulting.  All rights reserved.
+dnl Copyright (c) 2026      NVIDIA Corporation.  All rights reserved.
 dnl $COPYRIGHT$
 dnl
 dnl Additional copyrights may follow
@@ -43,7 +44,7 @@ dnl   4. We try to find the specified header and function with no change
 dnl      in CPPFLAGS or LDFLAGS and adding the specified libraries to LIBS.
 dnl
 dnl It is the responsibility of the caller to register arguments of the form
-dnl with-<package name>, with-<package name>-libdir, and with-package name>-incdir.
+dnl with-<package name>, with-<package name>-libdir, and with-<package name>-incdir.
 dnl All three are optional, nothing will break if the caller doesn't specify them
 dnl (and indeed, if the package being searched for isn't libnl3, it's likely the
 dnl with-<package name>-incdir is a complete waste of energy).
@@ -100,7 +101,7 @@ AC_DEFUN([OAC_CHECK_PACKAGE],[
     AC_REQUIRE([_OAC_CHECK_PACKAGE_STATIC_CHECK])
     OAC_ASSERT_LITERAL([$1])dnl
     OAC_ASSERT_LITERAL([$2])dnl
-    OAC_VAR_SCOPE_PUSH([check_package_$2_save_CPPFLAGS check_package_$2_save_LDFLAGS check_package_$2_save_LIBS check_package_happy check_package_have_flags check_package_prefix check_package_libdir check_package_incdir check_package_pcfilename])
+    OAC_VAR_SCOPE_PUSH([check_package_$2_save_CPPFLAGS check_package_$2_save_LDFLAGS check_package_$2_save_LIBS check_package_happy check_package_have_flags check_package_prefix check_package_libdir check_package_incdir check_package_type])
 
     check_package_$2_save_CPPFLAGS="${CPPFLAGS}"
     check_package_$2_save_LDFLAGS="${LDFLAGS}"
@@ -178,6 +179,7 @@ AC_DEFUN([OAC_CHECK_PACKAGE],[
            AS_UNSET([$2_STATIC_LDFLAGS])
            AS_UNSET([$2_LIBS])
            AS_UNSET([$2_STATIC_LIBS])
+           AS_UNSET([$2_PC_MODULES])
            $7])
 
     CPPFLAGS="${check_package_$2_save_CPPFLAGS}"
@@ -236,7 +238,8 @@ AC_DEFUN([OAC_CHECK_PACKAGE_PARSE_PKGCONFIG], [
     # that a hard failure.  It should not happen, outside of a weird system configuration
     # issue where we're probably not going to like the results anyway.
     AS_IF([test "${oac_cv_check_package_$1_pkg_config_exists}" = "yes"],
-          [AC_CACHE_CHECK([for $1 pkg-config cflags],
+          [$2_PC_MODULES=$3
+           AC_CACHE_CHECK([for $1 pkg-config cflags],
                 [oac_cv_check_package_$1_pkg_config_cppflags],
                 [_OAC_CHECK_PACKAGE_PKGCONFIG_RUN([$3], [--cflags],
                       [oac_cv_check_package_$1_pkg_config_cppflags], [],
@@ -363,8 +366,8 @@ dnl 2 -> prefix
 dnl 3 -> action if found flags
 AC_DEFUN([_OAC_CHECK_PACKAGE_PKGCONFIG], [
     m4_ifdef([$1_pkgconfig_module],
-             [m4_define([pcname], [$1_pkgconfig_module])],
-             [m4_define([pcname], [$1])])
+             [m4_pushdef([pcname], [$1_pkgconfig_module])],
+             [m4_pushdef([pcname], [$1])])
     AS_IF([test "${$1_USE_PKG_CONFIG}" != "0"],
           [# search for the package using pkg-config.  If the user provided a
            # --with-$1 or --with-$1-libdir argument, be explicit about where
@@ -385,11 +388,12 @@ AC_DEFUN([_OAC_CHECK_PACKAGE_PKGCONFIG], [
                              [AC_MSG_ERROR([Found pcname in both ${check_package_prefix}/lib/pkgconfig and
 ${check_package_prefix}/lib64/pkgconfig.  This is confusing.  Please add --with-$1-libdir=PATH
 to configure to help disambiguate.])],
-                             [check_package_cv_$1_pcfilename="${check_package_prefix}/lib/pkgconfig/pcname.pc"])],
+                             [oac_cv_check_package_$1_pcfilename="${check_package_prefix}/lib/pkgconfig/pcname.pc"])],
                       [test -r "${check_package_prefix}/lib64/pkgconfig/pcname.pc"],
                       [oac_cv_check_package_$1_pcfilename="${check_package_prefix}/lib64/pkgconfig/pcname.pc"],
                       [oac_cv_check_package_$1_pcfilename="${check_package_prefix}/lib/pkgconfig/pcname.pc"])])
          OAC_CHECK_PACKAGE_PARSE_PKGCONFIG([$1], [$2], [${oac_cv_check_package_$1_pcfilename}], [$3])])
+    m4_popdef([pcname])
 ])
 
 
@@ -402,10 +406,10 @@ AC_DEFUN([_OAC_CHECK_PACKAGE_PKGCONFIG_RUN], [
     OAC_VAR_SCOPE_PUSH([check_package_pkgconfig_run_results check_package_pkgconfig_run_happy])
     check_package_pkgconfig_run_happy=no
     AS_IF([test -n "${PKG_CONFIG}"],
-          [OAC_LOG_COMMAND([check_package_pkgconfig_run_results=`${PKG_CONFIG} $2 $1 2>&1`],
+          [OAC_LOG_COMMAND([check_package_pkgconfig_run_results=`${PKG_CONFIG} $2 "$1" 2>&1`],
                [AS_VAR_COPY([$3], [check_package_pkgconfig_run_results])
                 check_package_pkgconfig_run_happy=yes])
-           OAC_LOG_MSG([pkg-config output: ${check_package_pkgconfig_run_results}], [1])])
+           OAC_LOG_MSG([pkg-config output: ${check_package_pkgconfig_run_results}])])
     AS_IF([test "${check_package_pkgconfig_run_happy}" = "yes"], [$4], [$5])
     OAC_VAR_SCOPE_POP
 ])
@@ -421,8 +425,8 @@ dnl
 dnl wrapper compiler is off by default; must be explicitly enabled
 AC_DEFUN([_OAC_CHECK_PACKAGE_WRAPPER_COMPILER], [
     m4_ifdef([$1_wrapper_compiler],
-             [m4_define([wrapper_compiler_name], [$1_wrapper_compiler])],
-             [m4_define([wrapper_compiler_name], [$1cc])])
+             [m4_pushdef([wrapper_compiler_name], [$1_wrapper_compiler])],
+             [m4_pushdef([wrapper_compiler_name], [$1cc])])
     AS_IF([test "${$1_USE_WRAPPER_COMPILER}" = "1"],
           [# search for the package using wrapper compilers.  If the user
            # provided a --with-$1 argument, be explicit about where we look
@@ -433,13 +437,14 @@ AC_DEFUN([_OAC_CHECK_PACKAGE_WRAPPER_COMPILER], [
                        [oac_cv_check_package_$1_wrapper_compiler="wrapper_compiler_name"],
                        [oac_cv_check_package_$1_wrapper_compiler="${check_package_prefix}/bin/wrapper_compiler_name"])])
            _OAC_CHECK_PACKAGE_WRAPPER_INTERNAL([$1], [$2], [${oac_cv_check_package_$1_wrapper_compiler}], [$3])])
+    m4_popdef([wrapper_compiler_name])
 ])
 
 
 dnl 1 -> package name
 dnl 2 -> prefix
-dnl 2 -> wrapper compiler
-dnl 3 -> action if found flag
+dnl 3 -> wrapper compiler
+dnl 4 -> action if found flag
 AC_DEFUN([_OAC_CHECK_PACKAGE_WRAPPER_INTERNAL], [
     OAC_VAR_SCOPE_PUSH([check_package_wrapper_internal_result check_package_wrapper_internal_tmp])
 
@@ -452,7 +457,7 @@ AC_DEFUN([_OAC_CHECK_PACKAGE_WRAPPER_INTERNAL], [
     # if wrapper --showme:version  works, but getting one of the standard flags fails, we consider
     # that a hard failure.  It should not happen, outside of a weird system configuration
     # issue where we're probably not going to like the results anyway.
-    AS_IF([test ${oac_cv_check_package_$1_wrapper_compiler_works} = "yes"],
+    AS_IF([test "${oac_cv_check_package_$1_wrapper_compiler_works}" = "yes"],
           [AC_CACHE_CHECK([for $1 wrapper compiler cppflags],
                 [oac_cv_check_package_$1_wrapper_compiler_cppflags],
                 [_OAC_CHECK_PACKAGE_WRAPPER_RUN([$3], [--showme:incdirs],
@@ -495,7 +500,7 @@ AC_DEFUN([_OAC_CHECK_PACKAGE_WRAPPER_INTERNAL], [
                        done],
                       [AC_MSG_RESULT([error])
                        AC_MSG_ERROR([An error occurred retrieving $1 libs from wrapper compiler])])])
-           $2_LIBS="$oac_cv_check_package_$1_wrapper_compiler_libs"
+           $2_LIBS="${oac_cv_check_package_$1_wrapper_compiler_libs}"
 
            AC_CACHE_CHECK([for $1 wrapper compiler static libs],
                 [oac_cv_check_package_$1_wrapper_compiler_static_libs],
@@ -520,11 +525,11 @@ dnl 4 -> action if found
 dnl 5 -> action if failed
 AC_DEFUN([_OAC_CHECK_PACKAGE_WRAPPER_RUN], [
     OAC_VAR_SCOPE_PUSH([check_package_wrapper_run_results])
-    OAC_LOG_COMMAND([check_package_wrapper_run_results=`$1 $2 2>&1`],
+    OAC_LOG_COMMAND([check_package_wrapper_run_results=`"$1" $2 2>&1`],
              [AS_VAR_COPY([$3], [check_package_wrapper_run_results])
               $4],
              [$5])
-         OAC_LOG_MSG([wrapper output: ${check_package_wrapper_run_results}], [1])
+         OAC_LOG_MSG([wrapper output: ${check_package_wrapper_run_results}])
     OAC_VAR_SCOPE_POP
 ])
 
@@ -544,13 +549,13 @@ AC_DEFUN([_OAC_CHECK_PACKAGE_GENERIC], [
     AS_IF([test -n "${check_package_prefix}" || test -n "${check_package_incdir}" || test -n "${check_package_libdir}"],
           [_OAC_CHECK_PACKAGE_GENERIC_PREFIX([$1], [$2], [$3], [$4], [check_package_generic_happy=1])],
           [AC_MSG_NOTICE([Searching for $1 in default search paths])
-           $1_CPPFLAGS=
-           $1_LDFLAGS=
+           $2_CPPFLAGS=
+           $2_LDFLAGS=
            check_package_generic_happy=1])
 
     AS_IF([test ${check_package_generic_happy} -eq 1],
           [for check_package_generic_lib in $4 ; do
-               check_package_generic_lib=`echo ${check_package_generic_lib} | sed -e 's/^-l//'`
+               check_package_generic_lib=`echo "${check_package_generic_lib}" | sed 's/^-l//'`
                OAC_APPEND([$2_LIBS], ["-l${check_package_generic_lib}"])
                OAC_APPEND([$2_STATIC_LIBS], ["-l${check_package_generic_lib}"])
            done
@@ -575,38 +580,42 @@ dnl 3 -> headers (space separated list)
 dnl 4 -> libraries (space separated list)
 dnl 5 -> action if found flags
 AC_DEFUN([_OAC_CHECK_PACKAGE_GENERIC_PREFIX], [
-    OAC_VAR_SCOPE_PUSH([check_package_generic_search_header check_package_generic_search_lib check_package_generic_incdir])
+    OAC_VAR_SCOPE_PUSH([check_package_generic_search_header check_package_generic_search_lib check_package_generic_incdir check_package_generic_prefix_happy check_package_generic_prefix_lib check_package_generic_prefix_lib64])
 
     check_package_generic_search_header=`echo "$3" | cut -f1 -d' '`
-    check_package_generic_search_lib=`echo "$4" | cut -f1 -d' ' | sed -e 's/^-l//'`
+    check_package_generic_search_lib=`echo "$4" | cut -f1 -d' ' | sed 's/^-l//'`
 
     check_package_generic_prefix_happy=0
     AS_IF([test -n "${check_package_incdir}"],
           [check_package_generic_incdir="${check_package_incdir}"],
+          [test -n "${check_package_prefix}"],
           [check_package_generic_incdir="${check_package_prefix}/include"])
-    AC_MSG_CHECKING([for $1 header at ${check_package_generic_incdir}])
-    AS_IF([test -r ${check_package_generic_incdir}/${check_package_generic_search_header}],
-          [check_package_generic_prefix_happy=1
-           $2_CPPFLAGS="-I${check_package_generic_incdir}"
-           AC_MSG_RESULT([found])],
-          [AC_MSG_RESULT([not found])])
+    AS_IF([test -n "${check_package_generic_incdir}"],
+          [AC_MSG_CHECKING([for $1 header at ${check_package_generic_incdir}])
+           AS_IF([test -r "${check_package_generic_incdir}/${check_package_generic_search_header}"],
+                 [check_package_generic_prefix_happy=1
+                  $2_CPPFLAGS="-I${check_package_generic_incdir}"
+                  AC_MSG_RESULT([found])],
+                 [AC_MSG_RESULT([not found])])],
+          [check_package_generic_prefix_happy=1])
 
     AS_IF([test ${check_package_generic_prefix_happy} -eq 1],
           [check_package_generic_prefix_happy=0
            AS_IF([test -n "${check_package_libdir}"],
                  [AC_MSG_CHECKING([for $1 library (${check_package_generic_search_lib}) in ${check_package_libdir}])
-                  ls ${check_package_libdir}/lib${check_package_generic_search_lib}.*  >/dev/null 2>&1
+                  ls "${check_package_libdir}/lib${check_package_generic_search_lib}."*  >/dev/null 2>&1
                   AS_IF([test $? -eq 0],
                         [check_package_generic_prefix_happy=1
                          $2_LDFLAGS="-L${check_package_libdir}"
                          AC_MSG_RESULT([found])],
                         [AC_MSG_RESULT([not found])])],
+                 [test -n "${check_package_prefix}"],
                  [check_package_generic_prefix_lib=0
                   check_package_generic_prefix_lib64=0
 
-                  ls ${check_package_prefix}/lib/lib${check_package_generic_search_lib}.*  >/dev/null 2>&1
+                  ls "${check_package_prefix}/lib/lib${check_package_generic_search_lib}."*  >/dev/null 2>&1
                   AS_IF([test $? -eq 0], [check_package_generic_prefix_lib=1])
-                  ls ${check_package_prefix}/lib64/lib${check_package_generic_search_lib}.*  >/dev/null 2>&1
+                  ls "${check_package_prefix}/lib64/lib${check_package_generic_search_lib}."*  >/dev/null 2>&1
                   AS_IF([test $? -eq 0], [check_package_generic_prefix_lib64=1])
 
                   AC_MSG_CHECKING([for $1 library (${check_package_generic_search_lib}) in ${check_package_prefix}])
@@ -617,17 +626,18 @@ AC_DEFUN([_OAC_CHECK_PACKAGE_GENERIC_PREFIX], [
 ${check_package_prefix}/lib64.  This has confused configure.  Please add --with-$1-libdir=PATH to configure to help
 disambiguate.])],
                                [check_package_generic_prefix_happy=1
-                                $2_LDFLAGS=-L${check_package_prefix}/lib
+                                $2_LDFLAGS="-L${check_package_prefix}/lib"
                                 AC_MSG_RESULT([found -- lib])])],
                         [test ${check_package_generic_prefix_lib} -eq 1],
                         [check_package_generic_prefix_happy=1
-                         $2_LDFLAGS=-L${check_package_prefix}/lib
+                         $2_LDFLAGS="-L${check_package_prefix}/lib"
                          AC_MSG_RESULT([found -- lib])],
                         [test $check_package_generic_prefix_lib64 -eq 1],
                         [check_package_generic_prefix_happy=1
-                         $2_LDFLAGS=-L${check_package_prefix}/lib64
+                         $2_LDFLAGS="-L${check_package_prefix}/lib64"
                          AC_MSG_RESULT([found -- lib64])],
-                        [AC_MSG_RESULT([not found])])])])
+                        [AC_MSG_RESULT([not found])])],
+                 [check_package_generic_prefix_happy=1])])
 
     AS_IF([test ${check_package_generic_prefix_happy} -eq 1], [$5])
     OAC_VAR_SCOPE_POP
@@ -658,7 +668,7 @@ AC_DEFUN([_OAC_CHECK_PACKAGE_VERIFY],[
           [AC_CHECK_HEADER([${check_package_verify_search_header}],
                            [check_package_verify_happy=1], [check_package_verify_happy=0])])
 
-    dnl Note that we use AC_CHEC_FUNC here instead of AC_CHECK_LIB, because we're pretty sure we've
+    dnl Note that we use AC_CHECK_FUNC here instead of AC_CHECK_LIB, because we're pretty sure we've
     dnl found the library already (and have added it to LIBS).  Now we're just trying to verify
     dnl that the library we found contains the bits we need.
     AS_IF([test ${check_package_verify_happy} -eq 1],

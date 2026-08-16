@@ -44,14 +44,14 @@ dnl OAC_LOG_FILE: Dump the specified file into config.log
 dnl
 dnl 1 -> filename of file to dump into config.log
 AC_DEFUN([OAC_LOG_FILE],
-[AS_IF([test -n "$1" && test -f "$1"], [cat $1 >&AS_MESSAGE_LOG_FD])])dnl
+[AS_IF([test -n "$1" && test -f "$1"], [cat "$1" >&AS_MESSAGE_LOG_FD])])dnl
 
 
 dnl OAC_LOG_COMMAND: Run command, logging output, and checking status
 dnl
 dnl 1 -> command to execute
 dnl 2 -> action if successful
-dnl 3 -> action if if fail
+dnl 3 -> action if fail
 AC_DEFUN([OAC_LOG_COMMAND],[
 OAC_LOG_MSG([$1])
 $1 1>&AS_MESSAGE_LOG_FD 2>&1

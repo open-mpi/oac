@@ -7,6 +7,7 @@ dnl Copyright (c) 2016      Research Organization for Information Science
 dnl                         and Technology (RIST). All rights reserved.
 dnl Copyright (c) 2022      Amazon.com, Inc. or its affiliates.  All Rights reserved.
 dnl Copyright (c) 2022      IBM Corporation.  All rights reserved.
+dnl Copyright (c) 2026      NVIDIA Corporation.  All rights reserved.
 dnl $COPYRIGHT$
 dnl
 dnl Additional copyrights may follow
@@ -83,13 +84,13 @@ dnl blank : emit the summary to configure's default (i.e., AS_MESSAGE_FD)
 dnl
 dnl Other values will cause an m4_fatal error.
 AC_DEFUN([OAC_SUMMARY_PRINT],[
-    OAC_VAR_SCOPE_PUSH([oac_summary_section oac_summary_section_name])
-    m4_define([oac_summary_print_fd],
-              [m4_if([$1], [stderr], [2],
-                     [$1], [stdout], [1],
-                     [$1], [], [AS_MESSAGE_FD],
-                     [m4_fatal([You must pass stdin, stderr, or nothing to $0])])
-              ])
+    OAC_VAR_SCOPE_PUSH([oac_summary_section oac_summary_section_name oac_summary_section_value])
+    m4_pushdef([oac_summary_print_fd],
+               [m4_if([$1], [stderr], [2],
+                      [$1], [stdout], [1],
+                      [$1], [], [AS_MESSAGE_FD],
+                      [m4_fatal([You must pass stdout, stderr, or nothing to $0])])
+               ])
 
     for oac_summary_section in ${oac_summary_sections} ; do
         AS_VAR_COPY([oac_summary_section_name], [oac_summary_section_${oac_summary_section}_name])
@@ -100,6 +101,6 @@ AC_DEFUN([OAC_SUMMARY_PRINT],[
         echo " " >&oac_summary_print_fd
     done
 
-    m4_undefine([oac_summary_print_fd])
+    m4_popdef([oac_summary_print_fd])
     OAC_VAR_SCOPE_POP
 ])

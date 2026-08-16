@@ -6,6 +6,7 @@ dnl Copyright (c) 2014      Research Organization for Information Science
 dnl                         and Technology (RIST). All rights reserved.
 dnl
 dnl Copyright (c) 2022-2025 Nanook Consulting  All rights reserved.
+dnl Copyright (c) 2026      NVIDIA Corporation.  All rights reserved.
 dnl $COPYRIGHT$
 dnl
 dnl Additional copyrights may follow
@@ -15,7 +16,7 @@ dnl
 
 # OAC_CHECK_OS_FLAVOR_SPECIFIC()
 # ----------------------------------------------------
-# Helper macro from OAC-CHECK-OS-FLAVORS(), below.
+# Helper macro from OAC_CHECK_OS_FLAVORS(), below.
 # $1 = macro to look for
 # $2 = suffix of env variable to set with results
 AC_DEFUN([OAC_CHECK_OS_FLAVOR_SPECIFIC],
@@ -52,6 +53,6 @@ AC_DEFUN([OAC_CHECK_OS_FLAVORS],
     AC_DEFINE_UNQUOTED([OAC_HAVE_APPLE],
                        [$oac_have_apple],
                        [Whether or not we have apple])
-    AM_CONDITIONAL(OAC_HAVE_APPLE, test "$oac_have_apple" = "1")
+    AM_CONDITIONAL([OAC_HAVE_APPLE], [test "$oac_have_apple" = "1"])
 
 ])dnl

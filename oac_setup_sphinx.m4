@@ -2,7 +2,7 @@ dnl -*- autoconf -*-
 dnl
 dnl Copyright (c) 2020-2022 Cisco Systems, Inc.  All rights reserved.
 dnl Copyright (c) 2024 Jeffrey M. Squyres.  All rights reserved.
-dnl Copyright (c) 2025      NVIDIA Corporation.  All rights reserved.
+dnl Copyright (c) 2025-2026 NVIDIA Corporation.  All rights reserved.
 dnl
 dnl $COPYRIGHT$
 dnl
@@ -33,7 +33,7 @@ dnl "make dist" should be disabled, suitable for emitting via
 dnl AC_MSG_WARN.
 AC_DEFUN([OAC_SETUP_SPHINX],[
     OAC_ASSERT_PREFIX_DEFINED([$0])
-    OAC_VAR_SCOPE_PUSH([oac_summary_msg oac_sphinx_result oac_install_docs oac_sphinx_target_version oac_sphinx_found_version])
+    OAC_VAR_SCOPE_PUSH([oac_summary_msg oac_sphinx_result oac_install_docs oac_sphinx_target_version oac_sphinx_found_version oac_startdir oac_tmpdir oac_happy])
 
     # This option is probably only helpful to developers: have
     # configure fail if Sphinx is not found (i.e., if you don't have
@@ -60,7 +60,7 @@ AC_DEFUN([OAC_SETUP_SPHINX],[
     # If we found Sphinx, check to ensure that it's a recent enough
     # version.
     AS_IF([test -n "$SPHINX_BUILD"],
-          [[oac_sphinx_target_version=`sed -n -e 's/sphinx[><=]*\([0-9\.]\)/\1/p' $srcdir/docs/requirements.txt`]
+          [[oac_sphinx_target_version=`sed -n -e 's/sphinx[><=]*\([0-9][0-9.]*\)/\1/p' "$srcdir/docs/requirements.txt" | head -1`]
            # Some older versions of Sphinx (e.g., Sphinx v1.1.3 in
            # RHEL 7):
            #
@@ -75,7 +75,7 @@ AC_DEFUN([OAC_SETUP_SPHINX],[
            # In the case where --version *is* recognized, all the
            # additional processing is harmless and we still end up
            # with the Sphinx version number.
-           oac_sphinx_found_version=`$SPHINX_BUILD --version 2>&1 | head -n 1 | cut -d\  -f2 | sed -e 's/^v//'`
+           oac_sphinx_found_version=`"$SPHINX_BUILD" --version 2>&1 | head -n 1 | cut -d\  -f2 | sed -e 's/^v//'`
            AC_MSG_CHECKING([if Sphinx version is high enough ($oac_sphinx_found_version >= $oac_sphinx_target_version)])
            AS_VERSION_COMPARE([$oac_sphinx_found_version],
                               [$oac_sphinx_target_version],
@@ -116,15 +116,15 @@ EOF
            # Try to render this trivial RST project as both HTML and
            # man pages and see if it works.
            oac_happy=0
-           OAC_LOG_COMMAND([$SPHINX_BUILD -M html . build-html],
-               [OAC_LOG_COMMAND([$SPHINX_BUILD -M man . build-man],
+           OAC_LOG_COMMAND(["$SPHINX_BUILD" -M html . build-html],
+               [OAC_LOG_COMMAND(["$SPHINX_BUILD" -M man . build-man],
                    [oac_happy=1])])
            AS_IF([test $oac_happy -eq 1],
                  [AC_MSG_RESULT([found])],
                  [SPHINX_BUILD=
                   AC_MSG_RESULT([not found])])
 
-           cd $oac_startdir
+           cd "$oac_startdir"
            rm -rf $oac_tmpdir
           ])
 

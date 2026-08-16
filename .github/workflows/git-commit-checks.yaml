@@ -1,3 +1,4 @@
+# Copyright (c) 2026      NVIDIA Corporation.  All rights reserved.
 name: GitHub Action CI
 
 # We're using pull_request_target here instead of just pull_request so that the
@@ -23,13 +24,13 @@ jobs:
         runs-on: ubuntu-latest
         steps:
           - name: Check out the code
-            uses: actions/checkout@v2
+            uses: actions/checkout@v4
             with:
                 # Get all branches and history
                 fetch-depth: 0
 
           - name: Setup Python
-            uses: actions/setup-python@v2
+            uses: actions/setup-python@v4
             with:
               python-version: '3.x'
 

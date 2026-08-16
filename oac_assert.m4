@@ -4,6 +4,8 @@ dnl Copyright (c) 2022      Amazon.com, Inc. or its affiliates.  All Rights rese
 dnl $COPYRIGHT$
 dnl
 dnl Additional copyrights may follow
+dnl
+dnl $HEADER$
 
 
 dnl OAC_ASSERT_LITERAL: Assert if first argument is not an Autoconf literal

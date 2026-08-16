@@ -87,7 +87,7 @@ oac_var_scope_push ${LINENO} $1
 
 dnl OAC_VAR_SCOPE_POP: pop off the current variable scope
 dnl
-dnl Unset the last set of variables set in OAC_VAR_SCOPE_POP.  Every call to
+dnl Unset the last set of variables set in OAC_VAR_SCOPE_PUSH.  Every call to
 dnl OAC_VAR_SCOPE_PUSH should have a matched call to this macro.
 AC_DEFUN([OAC_VAR_SCOPE_POP],[
 AC_REQUIRE([OAC_VAR_SCOPE_INIT])dnl

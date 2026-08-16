@@ -1,7 +1,7 @@
 # How to contribute to the OAC project
 
 First off, thank you for taking the time to prepare a contribution to
-the Open Autconf macros project!
+the Open Autoconf macros project!
 
 ![You're awesome!](https://www.open-mpi.org/images/youre-awesome.jpg)
 
